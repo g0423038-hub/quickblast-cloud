@@ -5,12 +5,10 @@ import os
 import pandas as pd
 from Bio.Blast import NCBIXML
 
-# --- データベース保存用の安全なフォルダを準備 ---
-# Streamlitの監視外（一時フォルダ）に置くことで、自動再起動のバグを防ぐ
+# --- データベース保存用の安全なフォルダ ---
 DB_DIR = os.path.join(tempfile.gettempdir(), "quickblast_dbs")
 os.makedirs(DB_DIR, exist_ok=True)
 
-# ページ全体の設定
 st.set_page_config(page_title="Hybrid QuickBLAST", layout="wide")
 
 # ==========================================
@@ -32,7 +30,7 @@ if exec_mode == "クラウド・お手軽モード (環境構築不要)":
         "blastx": "blastx"
     }
 else:
-    st.sidebar.warning("⚠️ 自身のPCにNCBI BLAST+がインストールされている必要があります。")
+    st.sidebar.warning("⚠️ 自身のPCのターミナルで起動している場合のみ有効です。")
     blast_bin_path = st.sidebar.text_input(
         "BLASTのbinフォルダのパスを指定してください", 
         r"C:\Program Files\NCBI\blast-2.16.0+\bin"
@@ -44,7 +42,6 @@ else:
         "blastx": os.path.join(blast_bin_path, "blastx.exe")
     }
 
-# メイン画面タイトル
 st.title("🧬 Hybrid QuickBLAST")
 st.write(f"現在のモード: **{exec_mode}**")
 
@@ -64,8 +61,6 @@ with tab2:
     if st.button("🛠️ データベースを作成する", type="primary"):
         if db_fasta is not None:
             db_type_arg = "prot" if "prot" in db_type else "nucl"
-            
-            # 安全な一時フォルダのパスを使用
             db_path = os.path.join(DB_DIR, db_name)
             fasta_path = f"{db_path}.fasta"
             
@@ -80,7 +75,7 @@ with tab2:
             except subprocess.CalledProcessError as e:
                 st.error("エラーが発生しました。ファイルサイズが大きすぎるか、中身が正しいFASTA形式でない可能性があります。")
                 st.error(f"詳細エラー: {e.stderr}")
-except FileNotFoundError:
+            except FileNotFoundError:
                 st.error("指定されたパスに makeblastdb が見つかりません。")
                 st.error(f"【原因究明】Pythonが探しに行ったパス: {cmd[0]}")
         else:
@@ -118,8 +113,6 @@ with tab1:
                     query_path = temp_query.name
 
                 xml_out = os.path.join(DB_DIR, "blast_results.xml")
-                
-                # 検索時も安全な一時フォルダのデータベースパスを指定
                 target_db_path = os.path.join(DB_DIR, target_db)
                 
                 cmd = [
@@ -161,6 +154,9 @@ with tab1:
                 except subprocess.CalledProcessError as e:
                     st.error("BLASTの実行に失敗しました。データベース名が間違っているか、作成されていない可能性があります。")
                     st.error(f"詳細エラー: {e.stderr}")
+                except FileNotFoundError:
+                    st.error(f"指定されたパスに {program_key} が見つかりません。")
+                    st.error(f"【原因究明】Pythonが探しに行ったパス: {cmd[0]}")
                 finally:
                     if os.path.exists(query_path): os.remove(query_path)
                     if os.path.exists(xml_out): os.remove(xml_out)
