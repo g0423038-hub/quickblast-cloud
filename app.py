@@ -80,8 +80,9 @@ with tab2:
             except subprocess.CalledProcessError as e:
                 st.error("エラーが発生しました。ファイルサイズが大きすぎるか、中身が正しいFASTA形式でない可能性があります。")
                 st.error(f"詳細エラー: {e.stderr}")
-            except FileNotFoundError:
+except FileNotFoundError:
                 st.error("指定されたパスに makeblastdb が見つかりません。")
+                st.error(f"【原因究明】Pythonが探しに行ったパス: {cmd[0]}")
         else:
             st.warning("FASTAファイルをアップロードしてください。")
 
